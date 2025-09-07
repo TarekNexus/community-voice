@@ -77,7 +77,7 @@ const Values: React.FC = () => {
         {cardData.map((card, index) => (
           <motion.div key={index} variants={cardVariants}>
             <Card className="flex flex-col justify-between p-3 rounded-2xl border-2 border-gray-200 shadow-[0_1px_0_#e5e7eb,0_6px_24px_-12px_rgba(16,24,40,.16)] bg-white h-full">
-              <div className="flex justify-center mb-4 sm:mb-6">
+              <div className="flex  mb-4 sm:mb-6">
                 <Image
                   src={card.image}
                   alt={card.title}
