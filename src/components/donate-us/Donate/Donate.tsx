@@ -27,10 +27,107 @@ export default function DonationPage() {
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
 
-  const handleNext = () => setStep((s) => s + 1);
-  const handleBack = () => setStep((s) => s - 1);
+  // helper: show toast-style error using SweetAlert2
+  const showToastError = (message: string) => {
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "error",
+      title: message,
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+    });
+  };
+
+  // helper: basic email validation
+  const isValidEmail = (value: string) => /^\S+@\S+\.\S+$/.test(value);
+
+  // helper: expiry validation (accepts MM / YYYY or MM/YYYY or MM / YY)
+  const isValidExpiry = (value: string) => {
+    if (!value) return false;
+    const m = value.trim().match(/^(\d{1,2})\s*\/\s*(\d{2,4})$/);
+    if (!m) return false;
+    const month = parseInt(m[1], 10);
+    let year = parseInt(m[2], 10);
+    if (isNaN(month) || isNaN(year)) return false;
+    if (year < 100) year += 2000; 
+    if (month < 1 || month > 12) return false;
+    const now = new Date();
+
+   
+    if (year < now.getFullYear()) return false;
+    if (year === now.getFullYear() && month < now.getMonth() + 1) return false;
+    return true;
+  };
+
+  const handleNext = () => {
+ 
+    if (step === 1) {
+      const amountNum = parseFloat(String(donationAmount));
+      if (isNaN(amountNum) || amountNum <= 0) {
+        showToastError("Please enter a valid donation amount (> 0).");
+        return;
+      }
+    }
+
+    
+    if (step === 2) {
+      if (!name.trim()) {
+        showToastError("Please enter your full name.");
+        return;
+      }
+      if (!email.trim() || !isValidEmail(email)) {
+        showToastError("Please enter a valid email address.");
+        return;
+      }
+    }
+
+    setStep((s) => s + 1);
+  };
+
+  const handleBack = () => setStep((s) => Math.max(1, s - 1));
 
   const handleSubmit = () => {
+    // Validate Step 1 again just in case (defensive)
+    const amountNum = parseFloat(String(donationAmount));
+    if (isNaN(amountNum) || amountNum <= 0) {
+      showToastError("Please enter a valid donation amount (> 0).");
+      setStep(1);
+      return;
+    }
+
+    // Validate Step 2
+    if (!name.trim()) {
+      showToastError("Please enter your full name.");
+      setStep(2);
+      return;
+    }
+    if (!email.trim() || !isValidEmail(email)) {
+      showToastError("Please enter a valid email address.");
+      setStep(2);
+      return;
+    }
+
+    // Validate Step 3 (payment fields)
+    const cleanedCard = cardNumber.replace(/\D/g, "");
+    if (!cleanedCard || !/^\d{12,19}$/.test(cleanedCard)) {
+      showToastError("Please enter a valid card number (12-19 digits).");
+      setStep(3);
+      return;
+    }
+    if (!isValidExpiry(expiry)) {
+      showToastError("Please enter a valid expiry date (MM / YYYY) in the future.");
+      setStep(3);
+      return;
+    }
+    if (!/^\d{3,4}$/.test(cvv)) {
+      showToastError("Please enter a valid CVV (3 or 4 digits).");
+      setStep(3);
+      return;
+    }
+
+   
     console.log("Final Submission:", {
       donationType,
       donationAmount,
@@ -44,7 +141,7 @@ export default function DonationPage() {
       cvv,
     });
 
-    // SweetAlert2 popup
+   
     Swal.fire({
       title: "Thank You!",
       text: `Your donation of $${donationAmount} has been completed successfully.`,
@@ -53,7 +150,7 @@ export default function DonationPage() {
       confirmButtonColor: "#ffb703",
     });
 
-    // Optional: Reset form or go back to step 1
+    // Reset form or go back to step 1
     setStep(1);
     setDonationAmount(50);
     setDonationType("One time");
@@ -220,7 +317,7 @@ export default function DonationPage() {
           {step === 3 && (
             <div className="space-y-4 md:max-w-[400px] mx-auto">
               <div className="flex flex-col items-center">
-                <CustomIcon7  />
+                <CustomIcon7 />
                 <h2 className="text-[25px] font-bold text-center text-white">
                   Secure Payment
                 </h2>
@@ -228,7 +325,7 @@ export default function DonationPage() {
 
               <label className="mb-3 text-lg text-white">Card number</label>
               <Input
-                placeholder="1234 322 2525 25"
+                placeholder="1234 3222 2525 25"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(e.target.value)}
                 className="bg-white py-3 h-[46px] text-2xl rounded-[8px] w-full"
@@ -242,7 +339,7 @@ export default function DonationPage() {
               />
               <label className="mb-3 text-lg text-white">CVV</label>
               <Input
-                placeholder="1234"
+                placeholder="123"
                 value={cvv}
                 onChange={(e) => setCvv(e.target.value)}
                 className="bg-white py-3 h-[46px] text-2xl rounded-[8px] w-full"
